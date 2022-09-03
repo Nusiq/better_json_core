@@ -1,15 +1,21 @@
 from pathlib import Path
+from typing import Union
 import json
 
 from .compact_encoder import CompactEncoder
 from .jsonc import JSONCDecoder
 from .json_walker import JSONWalker, JSONSplitWalker, SKIP_LIST
 
+VERSION = (1, 1, 0)  # COMPATIBILITY BREAK, NEW FEATURE, BUGFIX
+__version__ = '.'.join([str(x) for x in VERSION])
 
-def load_jsonc(jsonc_path: Path) -> JSONWalker:
+
+def load_jsonc(jsonc_path: Union[Path, str]) -> JSONWalker:
     '''
-    Loads JSONC file into JSONWalker object.
+    Loads JSONC file into a JSON walker object.
     '''
+    if isinstance(jsonc_path, str):
+        jsonc_path = Path(jsonc_path)
     try:
         with jsonc_path.open(encoding='utf8') as jsonc_file:
             data = json.load(jsonc_file)
@@ -19,5 +25,3 @@ def load_jsonc(jsonc_path: Path) -> JSONWalker:
     return JSONWalker(data)
 
 
-VERSION = (1, 1, 0)  # COMPATIBILITY BREAK, NEW FEATURE, BUGFIX
-__version__ = '.'.join([str(x) for x in VERSION])

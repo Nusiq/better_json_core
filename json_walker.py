@@ -1,61 +1,4 @@
 from __future__ import annotations
-'''
-This module implements :class:`JSONWalker` and :class:`JSONSplitWalker`
-classes for easier, more compact way of navigating JSON files.
-They use the similar syntax to pathlib Path objects, they overload the
-division and integer division operators to create paths using keys like strings
-and integers.
-
-Here are some code examples:
-
-.. code-block:: python
-
-    from bedrock_packs.json import JSONWalker
-
-    with open('file.json', 'r') as f:
-        walker = JSONWalker.load(f)
-
-    # the content of the file
-    print(walker.data)
-    # output:
-    # {'a': 1, 'b': [{'x': 1, 'y': 2}, {'x': 4, 'y': 5}],
-    # 'c': {'c1': {'x': 11, 'y': 22}, 'c2': {'x': 44, 'y': 55}}}
-
-    # the value of 'a' property
-    print((walker / 'a').data)
-    # output:
-    # 1
-
-    # the value of any list element from 'b' property
-    for i in (walker / 'b' // int).data:
-        print(i.data)
-    # output:
-    # {'x': 1, 'y': 2}
-    # {'x': 4, 'y': 5}
-
-    # the 'x' value of any item (from list or object) from any object that
-    # matches the '[a-z]' regex
-    for i in (walker // '[a-z]' // None / 'x').data:
-        print(i.data)
-    # output:
-    # 1
-    # 4
-    # 11
-    # 44
-
-    # Creating JSON paths using create_path method
-    data = JSONWalker({})
-
-    new_path = data /'a' / 'b'
-    new_path.create_path("Hello")
-    # data:
-    # {"a": {"b": "Hello"}}
-
-    new_path = data / 'c' / 3
-    new_path.create_path("Test", empty_list_item_factory=lambda: "abc")
-    # data:
-    # {"a": {"b": "Hello"}, "c": ["abc", "abc", "abc", "Test"]}
-'''
 import json
 import re
 from typing import Literal, Union, Type, Optional, IO, Callable, Iterator
@@ -73,9 +16,9 @@ JSON_WALKER_DATA = Union[dict, list, str, float, int, bool, None, Exception]
 
 class JSONWalker:
     '''
-    Safe access to data accessed with json.load without risk of exceptions.
+    A class that represents a path in the JSON file for easy access to its
+    values.
     '''
-
     def __init__(
             self, data: JSON_WALKER_DATA, *,
             parent: Optional[JSONWalker] = None,
@@ -90,8 +33,7 @@ class JSONWalker:
     @property
     def parent(self) -> JSONWalker:
         '''
-        The :class:`JSONWalker` which created this instance of
-        :class:`JSONWalker` with :code:`__truediv__` or :code:`__floordiv__` .
+        The parent of this json walker (the walker that created this walker).
 
         :rises: :class:`KeyError` when this :class:`JSONWalker` is a root
             object.
@@ -103,8 +45,7 @@ class JSONWalker:
     @property
     def parent_key(self) -> JSON_KEY:
         '''
-        The JSON key used to access this :class:`JSONWalker` from parent
-        :class:`JSONWalker` .
+        The key used to access this walker from its parent
 
         :rises: :class:`KeyError` when this :class:`JSONWalker` is a root
             object
@@ -116,10 +57,8 @@ class JSONWalker:
     @staticmethod
     def loads(json_text: Union[str, bytes], **kwargs) -> JSONWalker:
         '''
-        Create :class:`JSONWalker` from string with :code:`json.loads()` .
-
-        :rises: Any type of exception risen by :code:`json.loads()` function
-            (:class:`ValueError`).
+        Creates json walker using `json.loads()` function. Passes all arguments
+        to `json.loads` and tries to creat the walker base on the result.
         '''
         data = json.loads(json_text, **kwargs)
         return JSONWalker(data)
@@ -127,10 +66,8 @@ class JSONWalker:
     @staticmethod
     def load(json_file: IO, **kwargs) -> JSONWalker:
         '''
-        Create :class:`JSONWalker` from file input with :code:`json.load()` .
-
-        :rises: Any type of exception risen by :code:`json.load()` function
-            (:class:`ValueError`).
+        Creates json walker using `json.load()` function. Passes all arguments
+        to `json.load` and tries to creat the walker base on the result.
         '''
         data = json.load(json_file, **kwargs)
         return JSONWalker(data)
@@ -138,7 +75,7 @@ class JSONWalker:
     @property
     def data(self) -> JSON_WALKER_DATA:
         '''
-        The part of the JSON file related to this :class:`JSONWalker`.
+        The data from JSON that this walker points to.
         '''
         return self._data
 
@@ -157,7 +94,7 @@ class JSONWalker:
             can_create_empty_list_items: bool = True,
             empty_list_item_factory: Optional[Callable[[], JSON]] = None):
         '''
-        Creates path to the part of JSON file pointed by this JSONWalker.
+        Creates path to the part of JSON file pointed by this walker.
 
         :param data: the data to put at the end of the path.
         :param exists_ok: if False, the ValueError will be risen if the path
@@ -166,7 +103,7 @@ class JSONWalker:
             to replace certain existing paths with dicts or lists. Example -
             if path "a"/"b"/"c" points at integer, creating path
             "a"/"b"/"c"/"d" will replace this integer with a dict in order to
-            make "d" a valid key. Setting this to false will cause a KeyError
+            make "d" a valid key. Setting this to false would cause a KeyError
             in this situation.
         :param can_create_empty_list_items: enables filling up the lists in
             JSON with values produced by the empty_list_item_factory in order
@@ -221,7 +158,10 @@ class JSONWalker:
     @property
     def exists(self) -> bool:
         '''
-        Returns true if path to this item already exists.
+        Returns true if path to this item already exists. This function
+        recursively checks the entire path to this item starting from root so
+        even if the object is detached from the root somewhere in the middle
+        of the path, the function will still return correct value.
         '''
         keys: list[JSON_KEY] = []
         root = self
@@ -256,8 +196,8 @@ class JSONWalker:
     @property
     def path(self) -> tuple[JSON_KEY, ...]:
         '''
-        Full JSON path to this :class:`JSONWalker` starting from the root of
-        the JSON file (loaded recursively from JSON parents).
+        Full JSON path to up to this point starting from the root of
+        the JSON file in from of a tuple of keys.
         '''
         result: list[JSON_KEY] = []
         parent = self
@@ -271,12 +211,7 @@ class JSONWalker:
 
     def __truediv__(self, key: JSON_KEY) -> JSONWalker:
         '''
-        Try to access next object in the JSON path. Returns :class:`JSONWalker`
-        with the next object in JSON path or with an exception if the path is
-        invalid. The exception is not risen, it becomes the data of returned
-        :class:`JSONWalker`.
-
-        :param key: a json key (list index or object field name)
+        The `/` operator creates descendant path in the JSON file.
         '''
         try:
             return JSONWalker(
@@ -287,15 +222,8 @@ class JSONWalker:
 
     def __floordiv__(self, key: JSON_SPLIT_KEY) -> JSONSplitWalker:
         '''
-        Access multiple objects from this :class:`JSONWalker` at once. Return
-        :class:`JSONSplitWalker`.
-
-        :param key: :code:`str` (any item from dictionary), :code:`int` (any
-            item from list), regular expression (matches dictionary keys),
-            :code:`None` (any item from dictionary or list),
-            or :code:`SKIP_LIST` (access to all list items if
-            current path points at list or skip this step and return
-            JSONSplitWalker with only current JSONWalker).
+        The `//` operator creates JSONSplitWalker object with multiple
+        alternative paths that matched provided key.
 
         :raises:
             :class:`TypeError` - invalid input data type
@@ -352,8 +280,8 @@ class JSONWalker:
 
     def __add__(self, other: Union[JSONSplitWalker, JSONWalker]) -> JSONSplitWalker:
         '''
-        Combine with :class:`JSONWalker` or  :class:`JSONSplitWalker`
-        object to create :class:`JSONSplitWalker`.
+        The `+` operator adds json walkers creating a split walker with more
+        values.
         '''
         if isinstance(other, JSONWalker):
             data = [self, other]
@@ -365,8 +293,8 @@ class JSONWalker:
 
 class JSONSplitWalker:
     '''
-    Multiple :class:`JSONWalker` objects grouped together. This class can be
-    browse JSON file in multiple places at once.
+    Multiple walker objects grouped together. This class can be browse JSON
+    file contents from multiple JSON paths at once.
     '''
 
     def __init__(self, data: list[JSONWalker]) -> None:
@@ -375,19 +303,14 @@ class JSONSplitWalker:
     @property
     def data(self) -> list[JSONWalker]:
         '''
-        The list of the :class:`JSONWalker` objects contained in this
-            :class:`JSONSplitWalker`.
+        The list of the :class:`JSONWalker` objects contained in this object.
         '''
         return self._data
 
     def __truediv__(self, key: JSON_KEY) -> JSONSplitWalker:
         '''
-        Execute :code:`__truediv__(key)` of every :class:`JSONWalker` of this
-        object and return new :class:`JSONSplitWalker` that contains only
-        thouse of the newly created :class:`JSONWalker` objects that represent
-        valid JSON path.
-
-        :param key: a json key (list index or object field name)
+        Applies `/` operator to all of the :class:`JSONWalkers` in this split
+        walker.
         '''
         result = []
         for walker in self.data:
@@ -398,11 +321,9 @@ class JSONSplitWalker:
 
     def __floordiv__(self, key: JSON_SPLIT_KEY) -> JSONSplitWalker:
         '''
-        Execute :code:`__floordiv__(key)` of every :class:`JSONWalker` of this
-        object and return new :class:`JSONSplitWalker` which combines all of
-        the results.
-
-        :param key: a json key (list index or object field name)
+        Applies `//` operator to all of the :class:`JSONWalkers` in this split
+        walker, creating even more split walkers (all groupped together in
+        one object).
         '''
         result: list[JSONWalker] = []
         for walker in self.data:
@@ -412,8 +333,8 @@ class JSONSplitWalker:
 
     def __add__(self, other: Union[JSONSplitWalker, JSONWalker]) -> JSONSplitWalker:
         '''
-        Combine with :class:`JSONWalker` or  another :class:`JSONSplitWalker`
-        object.
+        The `+` operator adds json walkers creating a split walker with more
+        values.
         '''
         if isinstance(other, JSONWalker):
             data = self.data + [other]
@@ -424,7 +345,7 @@ class JSONSplitWalker:
 
     def __iter__(self) -> Iterator[JSONWalker]:
         '''
-        Yield every :class:`JSONWalker` contained in this object.
+        Yield every walker contained in this object.
         '''
         for i in self.data:
             yield i

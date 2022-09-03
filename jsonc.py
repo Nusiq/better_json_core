@@ -1,7 +1,3 @@
-'''
-Provides decoder for JSON with comments and helps you navigate
-objects loaded into Python from JSON files.
-'''
 from __future__ import annotations
 
 import json
@@ -222,6 +218,9 @@ class JSONCDecoder(json.JSONDecoder):
     '''
     JSONDecoder with support for C-style comments. Similar to JSONC files from
     Visual Studio code but without support for trailing commas.
+
+    JSONCDecoder can be used in `cls` argument of `json.load` and `json.loads`
+    of startdard Python module - `json`.
     '''
     # pylint: disable=arguments-differ
 

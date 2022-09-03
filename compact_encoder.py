@@ -2,9 +2,10 @@ import json
 
 class CompactEncoder(json.JSONEncoder):
     '''
-    JSONEncoder which tries to find a compromise between compact and multiline
-    formatting from standard Python json module. Creates relatively compact
-    file which is also easy to read.
+    JSONEncoder can be used as `cls` argument to `json.dump` and `json.dumps`.
+    It creates formatted JSON strings, with indentation that are more compact
+    than the dafault formatting from `json` module. The main difference is that
+    the lists of primitives are not split into multiple lines. 
     '''
 
     def __init__(self, *args, **kwargs):
