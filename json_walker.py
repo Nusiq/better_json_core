@@ -1,17 +1,121 @@
 from __future__ import annotations
 import json
 import re
-from typing import Literal, Union, Type, Optional, IO, Callable, Iterator
+from typing import Union, Type, Optional, IO, Callable, Iterator
 
 class SKIP_LIST:
     '''Used as literal value for JSONSplitWalker paths'''
 
+# def _remove_escape_characters(text: str) -> str:
+#     '''Prints to a string, removint the escape characters'''
+#     with io.StringIO() as output:
+#         print(text, file=output, end='')
+#         contents = output.getvalue()
+#     return contents
+
+def _tuple_to_path_str(path: Union[str, int]):
+    result = []
+    for k in path:
+        if isinstance(k, int):
+            result.append(f'[{k}]')
+        elif isinstance(k, str):
+            if re.fullmatch("[a-zA-Z$_]+[a-zA-Z$_0-9]*", k):
+                # Mathes JS variable name (like connect like a.b.c)
+                if len(result) == 0:  # First item skip the dot
+                    result.append(k)
+                else: # Add dot before
+                    result.append(f".{k}")
+            else:
+                # Does not match JS variable name (like connect like
+                # ["a"]["b"]["c"])
+                k = json.dumps(k)  # escape special characters and add quotes
+                result.append(f'[{k}]')
+        else:
+            raise TypeError(f"Invalid key type {type(k)}")
+    return "".join(result)
+
+class JSONPath:
+    '''
+    Represents a path in a JSON file. The paths internally use a tuple listing
+    the keys, but they can be represented or created from a string. The string
+    representation is similar to the one used in JavaScript.
+
+    The path objects can be used to access the data of :class:`JSONWalker`.
+
+    Example:
+        >>> from better_json import JSONPath
+        >>> path = JSONPath(("a", "$abc", 1, 2, 'with quote "')) 
+        >>> print(path.data)
+        ... ('a', '$abc', 1, 2, 'with quote "')
+        >>> print(path)
+        ... a.$abc[1][2]["with quote \""]
+        >>> another_path = JSONPath(str(path))
+        >>> print(another_path)
+        ... a.$abc[1][2]["with quote \""]
+        >>> print(another_path.data == path.data)
+        ... True
+    '''
+    def __init__(self, path: Union[str, tuple[Union[str, int], ...]]):
+        if isinstance(path, str):
+            self.data = JSONPath._from_path_str(path)
+        else:
+            self.data = path
+
+    def __str__(self) -> str:
+        '''Returns a string representation of the path.'''
+        return _tuple_to_path_str(self.data)
+
+    @staticmethod
+    def _from_path_str(path_str: str) -> tuple[Union[str, int], ...]:
+        '''Converts a path string to a JSONPath.'''
+        if path_str == "":
+            return tuple()
+
+        # Results
+        path = []
+        curr_path = path_str
+
+        # Add . to the start of the string to make the patterm matching work
+        # better
+        if not curr_path.startswith("["):
+            curr_path = "." + curr_path
+        while True:
+            if curr_path == "":
+                break
+            if curr_path.startswith("."):
+                # Match a.b.c
+                match = re.match(r"\.([a-zA-Z$_]+[a-zA-Z$_0-9]*)", curr_path)
+                if match is None:
+                    raise ValueError(f"Invalid path: {path_str}")
+                path.append(match.group(1))
+                curr_path = curr_path[match.end():]
+            elif curr_path.startswith("["):
+                if len(curr_path) < 3: # shortest possible path is like [0]
+                    raise ValueError(f"Invalid path: {path_str}")
+                if curr_path[1] == '"':
+                    # Match ["a"]["b"]["c"]
+                    match = re.match(r'\[("(?:[^"]|\\")*")\]', curr_path)
+                    if match is None:
+                        raise ValueError(f"Invalid path: {path_str}")
+                    path.append(json.loads(match.group(1)))
+                    curr_path = curr_path[match.end():]
+                else:
+                    # Match [0][1][2]
+                    match = re.match(r"\[([0-9]+)\]", curr_path)
+                    if match is None:
+                        raise ValueError(f"Invalid path: {path_str}")
+                    path.append(int(match.group(1)))
+                    curr_path = curr_path[match.end():]
+            else:
+                raise ValueError(f"Invalid path: {path_str}")
+        return tuple(path)
 
 ## Type definitions
 JSON = Union[dict, list, str, float, int, bool, None]
-JSON_KEY = Union[str, int]
+JSON_KEY = Union[str, int, JSONPath]
 JSON_SPLIT_KEY = Union[str, Type[int], Type[str], None, Type[SKIP_LIST]]
 JSON_WALKER_DATA = Union[dict, list, str, float, int, bool, None, Exception]
+
 
 
 class JSONWalker:
@@ -196,8 +300,8 @@ class JSONWalker:
     @property
     def path(self) -> tuple[JSON_KEY, ...]:
         '''
-        Full JSON path to up to this point starting from the root of
-        the JSON file in from of a tuple of keys.
+        Full JSON path up to this point starting from the root of the JSON file
+        in from of a tuple of keys.
         '''
         result: list[JSON_KEY] = []
         parent = self
@@ -209,16 +313,30 @@ class JSONWalker:
             pass
         return tuple(reversed(result))
 
+    @property
+    def path_str(self) -> str:
+        '''
+        Full JSON path up to this point starting from the root of the JSON file
+        in form of a string.
+        '''
+        return _tuple_to_path_str(self.path)
+
     def __truediv__(self, key: JSON_KEY) -> JSONWalker:
         '''
         The `/` operator creates descendant path in the JSON file.
         '''
-        try:
-            return JSONWalker(
-                self.data[key],  # type: ignore
-                parent=self, parent_key=key)
-        except Exception as e:  # pylint: disable=broad-except
-            return JSONWalker(e, parent=self, parent_key=key)
+        if isinstance(key, JSONPath):
+            walker = self
+            for k in key.data:
+                walker = walker / k
+            return walker
+        else:
+            try:
+                return JSONWalker(
+                    self.data[key],  # type: ignore
+                    parent=self, parent_key=key)
+            except Exception as e:  # pylint: disable=broad-except
+                return JSONWalker(e, parent=self, parent_key=key)
 
     def __floordiv__(self, key: JSON_SPLIT_KEY) -> JSONSplitWalker:
         '''
