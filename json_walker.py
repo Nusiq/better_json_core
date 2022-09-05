@@ -468,3 +468,8 @@ class JSONSplitWalker:
         for i in self.data:
             yield i
 
+    def __len__(self) -> int:
+        '''
+        Return the number of walkers contained in this object.
+        '''
+        return len(self.data)
