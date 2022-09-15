@@ -6,7 +6,7 @@ from .compact_encoder import CompactEncoder
 from .jsonc import JSONCDecoder
 from .json_walker import JSONWalker, JSONSplitWalker, SKIP_LIST, JSONPath
 
-VERSION = (2, 1, 1)  # COMPATIBILITY BREAK, NEW FEATURE, BUGFIX
+VERSION = (2, 1, 2)  # COMPATIBILITY BREAK, NEW FEATURE, BUGFIX
 __version__ = '.'.join([str(x) for x in VERSION])
 
 

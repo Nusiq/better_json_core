@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import json
 import re
-from json import JSONDecodeError, scanner  # type: ignore
+from json import JSONDecodeError
+from json import scanner  # type: ignore
 from json.decoder import WHITESPACE, WHITESPACE_STR, scanstring  # type: ignore
-from typing import (
-    IO, Callable, Dict, Iterator, List, Optional, Tuple, Type, Union)
-from pathlib import Path
 
 # JSON Decoder
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL

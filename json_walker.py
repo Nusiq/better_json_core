@@ -13,7 +13,7 @@ class SKIP_LIST:
 #         contents = output.getvalue()
 #     return contents
 
-def _tuple_to_path_str(path: Union[str, int]):
+def _tuple_to_path_str(path: tuple[Union[str, int], ...]):
     result = []
     for k in path:
         if isinstance(k, int):
@@ -112,7 +112,8 @@ class JSONPath:
 
 ## Type definitions
 JSON = Union[dict, list, str, float, int, bool, None]
-JSON_KEY = Union[str, int, JSONPath]
+JSON_KEY = Union[str, int]
+JSON_PATH_KEY = Union[str, int, JSONPath]
 JSON_SPLIT_KEY = Union[str, Type[int], Type[str], None, Type[SKIP_LIST]]
 JSON_WALKER_DATA = Union[dict, list, str, float, int, bool, None, Exception]
 
@@ -225,7 +226,7 @@ class JSONWalker:
                 return
             raise ValueError("Path already exists")
         if empty_list_item_factory is None:
-            def empty_list_item_factory(): return None
+            empty_list_item_factory = lambda: None
         curr_item = self.root
         path = self.path
         for key in path:
@@ -321,7 +322,7 @@ class JSONWalker:
         '''
         return _tuple_to_path_str(self.path)
 
-    def __truediv__(self, key: JSON_KEY) -> JSONWalker:
+    def __truediv__(self, key: JSON_PATH_KEY) -> JSONWalker:
         '''
         The `/` operator creates descendant path in the JSON file.
         '''
@@ -425,7 +426,7 @@ class JSONSplitWalker:
         '''
         return self._data
 
-    def __truediv__(self, key: JSON_KEY) -> JSONSplitWalker:
+    def __truediv__(self, key: JSON_PATH_KEY) -> JSONSplitWalker:
         '''
         Applies `/` operator to all of the :class:`JSONWalkers` in this split
         walker.
