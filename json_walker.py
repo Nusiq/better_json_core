@@ -43,7 +43,7 @@ class JSONPath:
     The path objects can be used to access the data of :class:`JSONWalker`.
 
     Example:
-        >>> from better_json import JSONPath
+        >>> from better_json_tools import JSONPath
         >>> path = JSONPath(("a", "$abc", 1, 2, 'with quote "')) 
         >>> print(path.data)
         ... ('a', '$abc', 1, 2, 'with quote "')
