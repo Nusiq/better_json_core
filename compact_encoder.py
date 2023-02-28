@@ -49,7 +49,7 @@ class CompactEncoder(json.JSONEncoder):
                 body = []
                 for k, v in obj.items():
                     body.extend([
-                        f'{j[:self.indent]}"{k}": {j[self.indent:]}'
+                        f'{j[:self.indent]}{json.dumps(k)}: {j[self.indent:]}'
                         for j in self.iterencode(v)
                     ])
                 body_str = ",\n".join(body)
@@ -83,7 +83,7 @@ class CompactEncoder(json.JSONEncoder):
                 )
         elif self._is_primitive(obj):
             if isinstance(obj, str):
-                yield f'{ind}"{str(obj)}"'
+                yield f'{ind}{json.dumps(obj)}'
             else:
                 yield f'{ind}{str(obj).lower()}'
         elif obj is None:
