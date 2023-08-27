@@ -1,3 +1,4 @@
+from typing import Any, TypeGuard, Union, Iterator, cast
 import json
 
 class CompactEncoder(json.JSONEncoder):
@@ -8,15 +9,15 @@ class CompactEncoder(json.JSONEncoder):
     the lists of primitives are not split into multiple lines. 
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.indent = -1
-        self.respect_indent = True
+        self.indent: int = -1
+        self.respect_indent: bool = True
 
-    def _is_primitive(self, obj):
+    def _is_primitive(self, obj: Any) -> TypeGuard[Union[int, bool, str, float]]:
         return isinstance(obj, (int, bool, str, float))
 
-    def encode(self, obj):
+    def encode(self, o: Any) -> str:
         '''
         Return a JSON string representation of a Python data structure.
 
@@ -24,9 +25,9 @@ class CompactEncoder(json.JSONEncoder):
             >>> CompactEncoder().encode({"foo": ["bar", "baz"]})
             '{\\n\\t"foo": ["bar", "baz"]\\n}'
         '''
-        return ''.join([i for i in self.iterencode(obj)])
+        return ''.join(self.iterencode(o))
 
-    def iterencode(self, obj):
+    def iterencode(self, o: Any, *args: Any) -> Iterator[str]:
         '''
         Encode the given object and yield each string representation line by
         line.
@@ -42,12 +43,13 @@ class CompactEncoder(json.JSONEncoder):
             ind = self.indent*'\t'
         else:
             ind = ''
-        if isinstance(obj, dict):
-            if len(obj) == 0:
+        if isinstance(o, dict):
+            o = cast(dict[Any, Any], o)
+            if len(o) == 0:
                 yield f"{ind}{{}}"
             else:
-                body = []
-                for k, v in obj.items():
+                body: list[str] = []
+                for k, v in o.items():
                     body.extend([
                         f'{j[:self.indent]}{json.dumps(k)}: {j[self.indent:]}'
                         for j in self.iterencode(v)
@@ -58,35 +60,36 @@ class CompactEncoder(json.JSONEncoder):
                     f'{body_str}\n'
                     f'{ind}}}'
                 )
-        elif isinstance(obj, (list, tuple)):
+        elif isinstance(o, (list, tuple)):
+            o = cast(list[Any], o)
             primitive_list = True
-            for i in obj:
+            for i in o:
                 if not self._is_primitive(i):
                     primitive_list = False
                     break
             if primitive_list:
                 body = []
                 self.respect_indent = False
-                for i in obj:
-                    body.extend([j for j in self.iterencode(i)])
+                for i in o:
+                    body.extend(self.iterencode(i))
                 self.respect_indent = True
                 yield f'{ind}[{", ".join(body)}]'
             else:
                 body = []
-                for i in obj:
-                    body.extend([j for j in self.iterencode(i)])
+                for i in o:
+                    body.extend(self.iterencode(i))
                 body_str = ",\n".join(body)
                 yield (
                     f'{ind}[\n'
                     f'{body_str}\n'
                     f'{ind}]'
                 )
-        elif self._is_primitive(obj):
-            if isinstance(obj, str):
-                yield f'{ind}{json.dumps(obj)}'
+        elif self._is_primitive(o):
+            if isinstance(o, str):
+                yield f'{ind}{json.dumps(o)}'
             else:
-                yield f'{ind}{str(obj).lower()}'
-        elif obj is None:
+                yield f'{ind}{str(o).lower()}'
+        elif o is None:
             yield f'{ind}null'
         else:
             raise TypeError('Object of type set is not JSON serializable')

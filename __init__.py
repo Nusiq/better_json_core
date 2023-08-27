@@ -2,11 +2,18 @@ from pathlib import Path
 from typing import Union
 import json
 
-from .compact_encoder import CompactEncoder
-from .jsonc import JSONCDecoder
-from .json_walker import JSONWalker, JSONSplitWalker, SKIP_LIST, JSONPath
+from .compact_encoder import CompactEncoder as CompactEncoder
+from .jsonc import (
+    JSONCDecoder as JSONCDecoder
+)
+from .json_walker import (
+    JSONWalker as JSONWalker,
+    JSONSplitWalker as JSONSplitWalker,
+    SKIP_LIST as SKIP_LIST,
+    JSONPath as JSONPath
+)
 
-VERSION = (1, 0, 3)
+VERSION = (1, 0, 4)
 __version__ = '.'.join([str(x) for x in VERSION])
 
 

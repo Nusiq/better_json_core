@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 import re
-from typing import Union, Type, Optional, IO, Callable, Iterator
+from typing import Union, Type, Optional, IO, Callable, Iterator, Any
 
 class SKIP_LIST:
     '''Used as literal value for JSONSplitWalker paths'''
@@ -14,11 +14,11 @@ class SKIP_LIST:
 #     return contents
 
 def _tuple_to_path_str(path: tuple[Union[str, int], ...]):
-    result = []
+    result: list[str] = []
     for k in path:
         if isinstance(k, int):
             result.append(f'[{k}]')
-        elif isinstance(k, str):
+        elif isinstance(k, str): # pyright: ignore[reportUnnecessaryIsInstance]
             if re.fullmatch("[a-zA-Z$_]+[a-zA-Z$_0-9]*", k):
                 # Mathes JS variable name (like connect like a.b.c)
                 if len(result) == 0:  # First item skip the dot
@@ -72,7 +72,7 @@ class JSONPath:
             return tuple()
 
         # Results
-        path = []
+        path: list[int | str] = []
         curr_path = path_str
 
         # Add . to the start of the string to make the patterm matching work
@@ -111,11 +111,11 @@ class JSONPath:
         return tuple(path)
 
 ## Type definitions
-JSON = Union[dict, list, str, float, int, bool, None]
+JSON = Union[dict[str, Any], list[Any], str, float, int, bool, None]
 JSON_KEY = Union[str, int]
 JSON_PATH_KEY = Union[str, int, JSONPath]
 JSON_SPLIT_KEY = Union[str, Type[int], Type[str], None, Type[SKIP_LIST]]
-JSON_WALKER_DATA = Union[dict, list, str, float, int, bool, None, Exception]
+JSON_WALKER_DATA = Union[dict[str, Any], list[Any], str, float, int, bool, None, Exception]
 
 
 
@@ -160,7 +160,7 @@ class JSONWalker:
         return self._parent_key
 
     @staticmethod
-    def loads(json_text: Union[str, bytes], **kwargs) -> JSONWalker:
+    def loads(json_text: Union[str, bytes], **kwargs: Any) -> JSONWalker:
         '''
         Creates json walker using `json.loads()` function. Passes all arguments
         to `json.loads` and tries to creat the walker base on the result.
@@ -169,7 +169,7 @@ class JSONWalker:
         return JSONWalker(data)
 
     @staticmethod
-    def load(json_file: IO, **kwargs) -> JSONWalker:
+    def load(json_file: IO[Any], **kwargs: Any) -> JSONWalker:
         '''
         Creates json walker using `json.load()` function. Passes all arguments
         to `json.load` and tries to creat the walker base on the result.
@@ -238,7 +238,8 @@ class JSONWalker:
                 if key not in curr_item.data:
                     can_break_data_structure = True  # Creating new data
                 curr_item = curr_item / key
-            elif isinstance(key, int):  # key is an int data must be a list
+            elif isinstance(key, int):  # pyright: ignore[reportUnnecessaryIsInstance]
+                # key is an int data must be a list
                 if key < 0:
                     raise KeyError(key)
                 if not isinstance(curr_item.data, list):
@@ -431,7 +432,7 @@ class JSONSplitWalker:
         Applies `/` operator to all of the :class:`JSONWalkers` in this split
         walker.
         '''
-        result = []
+        result: list[JSONWalker] = []
         for walker in self.data:
             new_walker = walker / key
             if not isinstance(new_walker.data, Exception):
