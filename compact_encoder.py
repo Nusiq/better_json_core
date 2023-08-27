@@ -11,7 +11,7 @@ class CompactEncoder(json.JSONEncoder):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.indent: int = -1
+        self.__indent: int = -1
         self.respect_indent: bool = True
 
     def _is_primitive(self, obj: Any) -> TypeGuard[Union[int, bool, str, float]]:
@@ -38,9 +38,9 @@ class CompactEncoder(json.JSONEncoder):
             ... CompactEncoder().encode(item)
             True
         '''
-        self.indent += 1
+        self.__indent += 1
         if self.respect_indent:
-            ind = self.indent*'\t'
+            ind = self.__indent*'\t'
         else:
             ind = ''
         if isinstance(o, dict):
@@ -51,7 +51,7 @@ class CompactEncoder(json.JSONEncoder):
                 body: list[str] = []
                 for k, v in o.items():
                     body.extend([
-                        f'{j[:self.indent]}{json.dumps(k)}: {j[self.indent:]}'
+                        f'{j[:self.__indent]}{json.dumps(k)}: {j[self.__indent:]}'
                         for j in self.iterencode(v)
                     ])
                 body_str = ",\n".join(body)
@@ -93,4 +93,4 @@ class CompactEncoder(json.JSONEncoder):
             yield f'{ind}null'
         else:
             raise TypeError('Object of type set is not JSON serializable')
-        self.indent -= 1
+        self.__indent -= 1
