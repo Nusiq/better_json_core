@@ -44,7 +44,7 @@ class JSONPath:
 
     Example:
         >>> from better_json_tools import JSONPath
-        >>> path = JSONPath(("a", "$abc", 1, 2, 'with quote "')) 
+        >>> path = JSONPath(("a", "$abc", 1, 2, 'with quote "'))
         >>> print(path.data)
         ... ('a', '$abc', 1, 2, 'with quote "')
         >>> print(path)

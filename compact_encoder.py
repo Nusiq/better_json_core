@@ -6,7 +6,7 @@ class CompactEncoder(json.JSONEncoder):
     JSONEncoder can be used as `cls` argument to `json.dump` and `json.dumps`.
     It creates formatted JSON strings, with indentation that are more compact
     than the dafault formatting from `json` module. The main difference is that
-    the lists of primitives are not split into multiple lines. 
+    the lists of primitives are not split into multiple lines.
     '''
 
     def __init__(self, *args: Any, **kwargs: Any):
