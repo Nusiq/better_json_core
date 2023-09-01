@@ -1,3 +1,7 @@
+'''
+A collection of tools for working with JSON, JSONC files and
+JSON-like data structures.
+'''
 from pathlib import Path
 from typing import Union
 import json
