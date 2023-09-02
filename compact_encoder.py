@@ -1,3 +1,7 @@
+'''
+A module that provides a custom JSON encoder for JSON-like data structures,
+that is more compact than the default encoder but still readable.
+'''
 from typing import Any, TypeGuard, Union, Iterator, cast
 import json
 

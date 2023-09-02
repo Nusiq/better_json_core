@@ -34,5 +34,3 @@ def load_jsonc(jsonc_path: Union[Path, str]) -> JSONWalker:
         with jsonc_path.open(encoding='utf8') as jsonc_file:
             data = json.load(jsonc_file, cls=JSONCDecoder)
     return JSONWalker(data)
-
-

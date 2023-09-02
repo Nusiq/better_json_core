@@ -1,3 +1,6 @@
+'''
+A module that provides a parser for JSON with C-style comments.
+'''
 # type: ignore
 from __future__ import annotations
 
@@ -255,4 +258,3 @@ class JSONCDecoder(json.JSONDecoder):
         if end != len(s):
             raise JSONDecodeError("Extra data", s, end)
         return obj
-

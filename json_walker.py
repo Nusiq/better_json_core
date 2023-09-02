@@ -1,3 +1,6 @@
+'''
+A module that provides tools for easy access to JSON data using JSON paths.
+'''
 from __future__ import annotations
 import json
 import re
@@ -332,13 +335,12 @@ class JSONWalker:
             for k in key.data:
                 walker = walker / k
             return walker
-        else:
-            try:
-                return JSONWalker(
-                    self.data[key],  # type: ignore
-                    parent=self, parent_key=key)
-            except Exception as e:  # pylint: disable=broad-except
-                return JSONWalker(e, parent=self, parent_key=key)
+        try:
+            return JSONWalker(
+                self.data[key],  # type: ignore
+                parent=self, parent_key=key)
+        except Exception as e:  # pylint: disable=broad-except
+            return JSONWalker(e, parent=self, parent_key=key)
 
     def __floordiv__(self, key: JSON_SPLIT_KEY) -> JSONSplitWalker:
         '''
