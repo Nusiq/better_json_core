@@ -1,7 +1,7 @@
+# type: ignore
 '''
 A module that provides a parser for JSON with C-style comments.
 '''
-# type: ignore
 from __future__ import annotations
 
 import json
