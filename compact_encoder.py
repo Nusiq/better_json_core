@@ -31,7 +31,7 @@ class CompactEncoder(json.JSONEncoder):
         '''
         return ''.join(self.iterencode(o))
 
-    def iterencode(self, o: Any, *args: Any) -> Iterator[str]:
+    def iterencode(self, o: Any, *args: Any) -> Iterator[str]:  # type: ignore
         '''
         Encode the given object and yield each string representation line by
         line.
